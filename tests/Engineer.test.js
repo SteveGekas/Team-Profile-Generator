@@ -1,4 +1,4 @@
-const engineer = require(".lib/Engineer.js");
+const engineer = require("../Engineer.js");
 
 describe("engineer", () => {
     describe("github", () => {

@@ -1,10 +1,10 @@
 const inquirer = require("inquirer");
 const jest = require("jest");
 const fs = require("fs");
-const employee = require("./lib/Employee.js");
-const engineer = require("/.lib/Engineer.js");
-const intern = require("./lib/Intern.js");
-const manager = require("./lib/Manager.js");
+const employee = require("../Employee.js");
+const engineer = require("../Engineer.js");
+const intern = require("../Intern.js");
+const manager = require("../Manager.js");
 //const path = require('path');
 
 function init() {
