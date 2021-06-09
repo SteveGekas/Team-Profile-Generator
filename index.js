@@ -1,90 +1,94 @@
 const inquirer = require("inquirer");
-const jest = require("jest");
 const fs = require("fs");
-const employee = require("../Employee.js");
-const engineer = require("../Engineer.js");
-const intern = require("../Intern.js");
-const manager = require("../Manager.js");
-//const path = require('path');
+const Engineer = require("./lib/Engineer");
+const Intern = require("./lib/Intern");
+const Manager = require("./lib/Manager");
 
-function init() {
-    createHTML();
-    addTeamMember();
+const employees = [];
+
+function initApp() {
+    startHtml();
+    addMember();
 }
 
-function addTeamMember() {
-    inquirer.prompt([
-        {
-            type: 'input',
-            name: 'name',
-            message: 'Enter your team member\'s name.',
+function addMember() {
+    inquirer.prompt([{
+        message: "Enter team member's name",
+        name: "name"
+    },
+    {
+        type: "list",
+        message: "Select team member's role",
+        choices: [
+            "Engineer",
+            "Intern",
+            "Manager"
+        ],
+        name: "role"
+    },
+    {
+        message: "Enter team member's id",
+        name: "id"
+    },
+    {
+        message: "Enter team member's email address",
+        name: "email"
+    }])
+    .then(function({name, role, id, email}) {
+        let roleInfo = "";
+        if (role === "Engineer") {
+            roleInfo = "GitHub username";
+        } else if (role === "Intern") {
+            roleInfo = "school name";
+        } else {
+            roleInfo = "office phone number";
+        }
+        inquirer.prompt([{
+            message: `Enter team member's ${roleInfo}`,
+            name: "roleInfo"
         },
         {
-            type: 'input',
-            name: 'id',
-            message: 'Enter your team member\'s id number.',
-        },
-        {
-            type: 'input',
-            name: 'email',
-            message: 'Enter your team member\'s email.',
-        },
-        {
-            type: 'checkbox',
-            name: 'role',
-            message: 'Choose your team member\'s role.',
-            choices: ['Engineer', 'Intern', 'Manager'],
-        },
-
-    ])
-
-        .then(function ({ name, role, id, email }) {
-            let teamRoleInfo = "";
+            type: "list",
+            message: "Would you like to add more team members?",
+            choices: [
+                "yes",
+                "no"
+            ],
+            name: "moreMembers"
+        }])
+        .then(function({roleInfo, moreMembers}) {
+            let newMember;
             if (role === "Engineer") {
-                teamRoleInfo = "GitHub username";
+                newMember = new Engineer(name, id, email, roleInfo);
             } else if (role === "Intern") {
-                teamRoleInfo = "school name";
+                newMember = new Intern(name, id, email, roleInfo);
             } else {
-                teamRoleInfo = "office phone number";
+                newMember = new Manager(name, id, email, roleInfo);
             }
-            inquirer.prompt([{
-                type: 'input',
-                name: "temRoleInfo",
-                message: `Enter team member's ${teamRoleInfo}`,
-
-            },
-            {
-                type: "list",
-                name: "addAnother",
-                message: "Would you like to add another team member?",
-                choices: ['Yes', 'No'],
-
-            }])
-                .then(function ({ roleInfo, addAnother }) {
-                    let newTeamMember;
-                    if (role === "Engineer") {
-                        newTeamMember = new engineer(name, id, email, roleInfo);
-                    } else if (role === "Intern") {
-                        newTeamMember = new intern(name, id, email, roleInfo);
-                    } else {
-                        newTeamMember = new manager(name, id, email, roleInfo);
-                    }
-                    employee.push(newTeamMember);
-                    addHTML(newTeamMember)
-                        .then(function () {
-                            if (addAnother === "Yes") {
-                                addTeamMember();
-                            }
-                            else {
-                                createHTML();
-                            }
-                        });
-                });
+            employees.push(newMember);
+            addHtml(newMember)
+            .then(function() {
+                if (moreMembers === "yes") {
+                    addMember();
+                } else {
+                    finishHtml();
+                }
+            });
+            
         });
+    });
 }
 
-function createHTML() {
-    const HTML = `<!DOCTYPE html>
+// function renderHtml(memberArray) {
+//     startHtml();
+//     for (const member of memberArray) {
+//         addHtml(member);
+//     }
+//     finishHtml();
+// }
+
+function startHtml() {
+    const html = `<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
@@ -99,22 +103,23 @@ function createHTML() {
         </nav>
         <div class="container">
             <div class="row">`;
-    fs.writeFileSync("/index.html", HTML, function(error){
-        if(error) {
-            console.log(error);
+    fs.writeFile("./output/team.html", html, function(err) {
+        if (err) {
+            console.log(err);
         }
-    })
+    });
+    console.log("start");
 }
 
-function createHTML(teamMember) {
-    return new Promise(function (resolve, reject) {
-        const name = teamMember.getName();
-        const id = teamMember.getId();
-        const email = teamMember.getEmail();
-        const role = teamMember.getRole();
+function addHtml(member) {
+    return new Promise(function(resolve, reject) {
+        const name = member.getName();
+        const role = member.getRole();
+        const id = member.getId();
+        const email = member.getEmail();
         let data = "";
-        if (role === "engineer") {
-            const gitHub = teamMember.getGithub();
+        if (role === "Engineer") {
+            const gitHub = member.getGithub();
             data = `<div class="col-6">
             <div class="card mx-auto mb-3" style="width: 18rem">
             <h5 class="card-header">${name}<br /><br />Engineer</h5>
@@ -125,9 +130,8 @@ function createHTML(teamMember) {
             </ul>
             </div>
         </div>`;
-        }
-        else if (role === "intern") {
-            const school = teamMember.getSchool();
+        } else if (role === "Intern") {
+            const school = member.getSchool();
             data = `<div class="col-6">
             <div class="card mx-auto mb-3" style="width: 18rem">
             <h5 class="card-header">${name}<br /><br />Intern</h5>
@@ -138,9 +142,8 @@ function createHTML(teamMember) {
             </ul>
             </div>
         </div>`;
-        }
-        else {
-            const officePhone = teamMember.getOfficeNumber();
+        } else {
+            const officePhone = member.getOfficeNumber();
             data = `<div class="col-6">
             <div class="card mx-auto mb-3" style="width: 18rem">
             <h5 class="card-header">${name}<br /><br />Manager</h5>
@@ -152,31 +155,41 @@ function createHTML(teamMember) {
             </div>
         </div>`
         }
-        console.log("Adding Current Team Member");
-        fs.appendFile("./index.html", HTML, function (error) {
-            if (error) {
-                return reject(error);
-            }
-            else {
-                return resolve;
-            }
-        })
-
+        console.log("adding team member");
+        fs.appendFile("./output/team.html", data, function (err) {
+            if (err) {
+                return reject(err);
+            };
+            return resolve();
+        });
     });
+    
+            
+    
+        
+    
+    
+}
 
-
-
-
-    function createHTML() {
-        const HTML = ` </div>
+function finishHtml() {
+    const html = ` </div>
     </div>
     
 </body>
 </html>`;
 
-        fs.appendFile("./index.html", HTML)
-
-    }
+    fs.appendFile("./output/team.html", html, function (err) {
+        if (err) {
+            console.log(err);
+        };
+    });
+    console.log("end");
 }
 
-    init();
+// addMember();
+// startHtml();
+// addHtml("hi")
+// .then(function() {
+// finishHtml();
+// });
+initApp();
